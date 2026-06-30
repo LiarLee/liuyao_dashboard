@@ -51,10 +51,7 @@
   }
   .taiji-wrap.hidden { opacity: 0; pointer-events: none; transform: scale(.8); }
 
-  /* ── Long-press feedback ── */
-  .taiji-wrap.pressing {
-    transform: scale(1.08);
-  }
+  .taiji-wrap.pressing { transform: scale(1.08); }
   .taiji-wrap.pressing .taiji-css {
     filter: drop-shadow(0 0 45px rgba(255,255,255,.35));
   }
@@ -75,8 +72,7 @@
   }
 
   .taiji-css {
-    width: 234px;
-    height: 234px;
+    width: 234px; height: 234px;
     margin: 0 auto;
     border-radius: 50%;
     background: linear-gradient(to right, #fff 50%, #000 50%);
@@ -146,42 +142,51 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* Yao lines */
+  /* ── Yao Stack — HORIZONTAL ── */
   .yao-stack {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 28px;
+  }
+
+  /* Each column: label on top, vertical bar, info on bottom */
+  .yao-line {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-  }
-  .yao-line {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
+    gap: 8px;
     transition: all .6s cubic-bezier(.34,1.56,.64,1);
-  }
-  .yao-line.enter {
-    animation: yao-enter .55s cubic-bezier(.22,1,.36,1) both;
-  }
-  @keyframes yao-enter {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
+    min-width: 56px;
   }
 
-  /* Yang: solid bar. Yin: two bars */
+  /* ── Vertical bars ── */
   .yao-bar {
-    height: 14px;
-    border-radius: 7px;
-    transition: background .5s ease, box-shadow .5s ease, width .5s ease;
+    width: 16px;
+    border-radius: 8px;
+    transition: background .5s ease, box-shadow .5s ease, height .5s ease;
   }
+
+  /* Yang: one tall solid bar */
   .yao-yang .yao-bar {
-    width: 120px;
+    height: 90px;
     background: var(--yao);
+  }
+
+  /* Yin: two short bars stacked vertically */
+  .yao-yin .yao-bars {
+    display: flex;
+    flex-direction: column;
+    height: 90px;
+    justify-content: space-between;
+    align-items: center;
   }
   .yao-yin .yao-bar {
-    width: 52px;
+    height: 34px;
     background: var(--yao);
   }
+
   .yao-bar.dong {
     background: var(--dong) !important;
     box-shadow: 0 0 18px rgba(139,26,26,.55), 0 0 40px rgba(139,26,26,.25);
@@ -190,37 +195,33 @@
   .yao-bar.changed {
     box-shadow: 0 0 10px rgba(201,169,110,.45), 0 0 18px rgba(201,169,110,.2);
   }
-  .yao-bars {
-    display: flex;
-    width: 120px;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
+
   @keyframes dong-glow {
     0%, 100% { box-shadow: 0 0 14px rgba(139,26,26,.45), 0 0 32px rgba(139,26,26,.18); }
     50%      { box-shadow: 0 0 26px rgba(139,26,26,.7), 0 0 56px rgba(139,26,26,.35); }
   }
 
-  /* ── Shuffle / unrevealed state ── */
+  /* ── Shuffle / unrevealed ── */
   .yao-bar.unrevealed {
-    width: 120px;
-    background: linear-gradient(90deg,
+    height: 90px;
+    width: 16px;
+    background: linear-gradient(to bottom,
       #b8a070 0%, #d4be8c 20%, #efe0b8 50%, #d4be8c 80%, #b8a070 100%);
-    background-size: 200% 100%;
-    animation: shimmer 0.7s linear infinite;
+    background-size: 100% 200%;
+    animation: shimmer-v 0.7s linear infinite;
   }
-  @keyframes shimmer {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+  @keyframes shimmer-v {
+    0%   { background-position: 0 200%; }
+    100% { background-position: 0 -200%; }
   }
 
   .yao-line.shuffling .yao-bar {
-    animation: shimmer 0.7s linear infinite, shuffle-wobble 0.12s ease-in-out infinite;
+    animation: shimmer-v 0.7s linear infinite, shuffle-wobble-v 0.12s ease-in-out infinite;
   }
-  @keyframes shuffle-wobble {
-    0%, 100% { transform: translateX(0); }
-    25%  { transform: translateX(-4px); }
-    75%  { transform: translateX(4px); }
+  @keyframes shuffle-wobble-v {
+    0%, 100% { transform: translateY(0); }
+    25%  { transform: translateY(-5px); }
+    75%  { transform: translateY(5px); }
   }
 
   .yao-line.revealed {
@@ -231,14 +232,14 @@
     100% { opacity: 1; transform: scale(1); filter: blur(0); }
   }
 
-  /* Line label */
+  /* ── Line labels (above bar) ── */
   .yao-label {
     font-size: .78rem;
     color: var(--text-dark);
     opacity: .45;
-    min-width: 2.2rem;
     text-align: center;
     transition: all .5s ease;
+    min-height: 1.2em;
   }
   .yao-label.dong {
     opacity: 1;
@@ -246,15 +247,18 @@
     font-weight: bold;
   }
 
-  /* ── Na-jia info on right side of each line ── */
+  /* ── Na-jia info (below bar) ── */
   .yao-info {
-    font-size: .72rem;
+    font-size: .68rem;
     color: #7a6e5a;
     opacity: .55;
-    min-width: 7rem;
-    text-align: left;
+    text-align: center;
     letter-spacing: .05em;
     transition: all .5s ease;
+    min-height: 2.4em;
+    line-height: 1.2;
+    max-width: 72px;
+    word-break: keep-all;
   }
   .yao-info.dong {
     opacity: 1;
@@ -312,7 +316,6 @@
     to   { transform: scale(1); opacity: 1; }
   }
 
-  /* ── Transition overlay ── */
   .fade-out {
     animation: fadeOut .35s ease forwards;
   }
@@ -327,11 +330,16 @@
     .taiji-css::before { width: 91px; height: 91px; background: radial-gradient(circle at center, #000 14px, #fff 14px); }
     .taiji-css::after  { width: 91px; height: 91px; background: radial-gradient(circle at center, #fff 14px, #000 14px); }
     .taiji-wrap.pressing::after { width: 182px; height: 182px; }
-    .gua-card { padding: 1.5rem 1.2rem; gap: 1rem; }
-    .yao-yang .yao-bar { width: 100px; }
-    .yao-yin .yao-bar  { width: 42px; }
-    .yao-bars { width: 100px; }
-    .yao-line { gap: 16px; }
+    .gua-card { padding: 1.5rem .8rem; gap: 1rem; }
+    .yao-stack { gap: 12px; }
+    .yao-line { min-width: 42px; gap: 4px; }
+    .yao-bar { width: 12px; border-radius: 6px; }
+    .yao-yang .yao-bar { height: 64px; }
+    .yao-yin .yao-bars { height: 64px; }
+    .yao-yin .yao-bar { height: 24px; }
+    .yao-bar.unrevealed { height: 64px; width: 12px; }
+    .yao-label { font-size: .68rem; }
+    .yao-info { font-size: .6rem; max-width: 56px; }
     .gua-name { font-size: 1.4rem; }
   }
 </style>
@@ -355,7 +363,7 @@ const TRIGRAM = ['☷','☶','☵','☴','☳','☲','☱','☰'];
 const TRIGRAM_NAME = ['坤','艮','坎','巽','震','离','兑','乾'];
 const POS = ['初','二','三','四','五','上'];
 
-// ── 纳甲 (Na Jia) ── trigram idx 0-7 → [inner 3 lines, outer 3 lines]
+// ── 纳甲 ──
 const NAJIA = [
   { inner: ['乙未','乙巳','乙卯'], outer: ['癸丑','癸亥','癸酉'] }, // 0 坤
   { inner: ['丙辰','丙午','丙申'], outer: ['丙戌','丙子','丙寅'] }, // 1 艮
@@ -367,21 +375,20 @@ const NAJIA = [
   { inner: ['甲子','甲寅','甲辰'], outer: ['壬午','壬申','壬戌'] }, // 7 乾
 ];
 
-// ── 五行 ──
 const ZHI_WX = { '子':'水','丑':'土','寅':'木','卯':'木','辰':'土','巳':'火', '午':'火','未':'土','申':'金','酉':'金','戌':'土','亥':'水' };
-const GUA_WX = ['土','土','水','木','木','火','金','金']; // 坤艮坎巽震离兑乾
-const WX_S = { '木':'火','火':'土','土':'金','金':'水','水':'木' }; // 相生
-const WX_K = { '木':'土','土':'水','水':'火','火':'金','金':'木' }; // 相克
+const GUA_WX = ['土','土','水','木','木','火','金','金'];
+const WX_S = { '木':'火','火':'土','土':'金','金':'水','水':'木' };
+const WX_K = { '木':'土','土':'水','水':'火','火':'金','金':'木' };
 
-// ── 八宫世应：hexValue → {palace, shi} ──
+// ── 八宫世应 ──
 const PALACE_SHI = {};
 (function buildPalace() {
   for (let p = 0; p < 8; p++) {
     const pure = p * 9;
     const m = [pure];
     for (let s = 0; s < 5; s++) { let v = pure; for (let i = 0; i <= s; i++) v ^= (1 << i); m.push(v); }
-    m.push(m[5] ^ 8);  // 游魂
-    m.push(m[5] ^ 15); // 归魂
+    m.push(m[5] ^ 8);
+    m.push(m[5] ^ 15);
     const sPos = [5,0,1,2,3,4,3,2];
     for (let i = 0; i < 8; i++) PALACE_SHI[m[i]] = { palace: p, shi: sPos[i] };
   }
@@ -389,7 +396,7 @@ const PALACE_SHI = {};
 
 function getNaJiaLines(hv) {
   const lo = hv & 7, hi = hv >> 3;
-  return [...NAJIA[lo].inner, ...NAJIA[hi].outer]; // 初→上
+  return [...NAJIA[lo].inner, ...NAJIA[hi].outer];
 }
 function getLiuQin(hv) {
   const pe = GUA_WX[PALACE_SHI[hv].palace];
@@ -409,19 +416,18 @@ function lineInfoText(hv, idx) {
   let tag = '';
   if (idx === ps.shi) tag = '·世';
   else if (idx === ((ps.shi + 3) % 6)) tag = '·应';
-  return gz + '·' + lq + tag;
+  return gz + '\n' + lq + tag;
 }
 
 // ── State ──
-let state = 'taiji'; // taiji | hexagram | result
-let hexVal = 0;      // 0-63
-let lines = [];       // [l1..l6] bottom→top, 0=yin 1=yang
-let movingIdx = -1;   // 0-5 (0=初爻)
+let state = 'taiji';
+let hexVal = 0;
+let lines = [];
+let movingIdx = -1;
 let bianVal = 0;
 
 const app = document.getElementById('app');
 
-// ── Helpers ──
 function lineLabel(idx, isYang) {
   return POS[idx] + (isYang ? '九' : '六');
 }
@@ -431,10 +437,10 @@ function trigramInfo(val) {
   return TRIGRAM[lo] + TRIGRAM[up] + ' ' + TRIGRAM_NAME[lo] + '下' + TRIGRAM_NAME[up] + '上';
 }
 
-// ── Render shuffling yao (for initial draw) ──
+// ── Render shuffling yao (horizontal) ──
 function renderShufflingYao() {
   let html = '<div class="yao-stack">';
-  for (let i = 5; i >= 0; i--) {
+  for (let i = 0; i < 6; i++) {
     html += `<div class="yao-line shuffling" data-idx="${i}">
       <span class="yao-label"></span>
       <div class="yao-bar unrevealed"></div>
@@ -445,38 +451,33 @@ function renderShufflingYao() {
   return html;
 }
 
-// ── Shuffle → Reveal animation ──
+// ── Shuffle → Reveal (horizontal: left→right 初→上) ──
 function startShuffleAndReveal() {
   const lineEls = document.querySelectorAll('.yao-line.shuffling');
   if (!lineEls.length) return;
 
-  const SHUFFLE_DURATION = 900; // ms of rapid shuffle
-  const REVEAL_STAGGER = 110;   // ms between each line reveal
+  const SHUFFLE_DURATION = 900;
+  const REVEAL_STAGGER = 110;
   const startTime = performance.now();
 
-  // Build reveal order: bottom (idx 0) first, top (idx 5) last
   const ordered = [];
   lineEls.forEach(el => ordered.push(el));
-  // lineEls are in DOM order: top→bottom (idx 5→0). We want bottom→top.
-  ordered.reverse(); // now bottom first
+  // lineEls are in DOM order: 初0→上5 (left→right). We reveal left→right (初 first).
 
   let shuffleTimer = null;
   let revealed = 0;
 
   function doShuffle() {
     if (revealed >= 6) return;
-    // Random wobble on still-shuffling lines
     ordered.forEach(el => {
       if (el.classList.contains('shuffling') && Math.random() < 0.35) {
-        el.style.transform = `translateX(${(Math.random()-0.5)*10}px)`;
+        el.style.transform = `translateY(${(Math.random()-0.5)*10}px)`;
       }
     });
-    // Schedule next shuffle tick
     const elapsed = performance.now() - startTime;
     if (elapsed < SHUFFLE_DURATION) {
       shuffleTimer = requestAnimationFrame(doShuffle);
     } else {
-      // Start revealing
       revealNext();
     }
   }
@@ -492,7 +493,6 @@ function startShuffleAndReveal() {
       ? `<div class="yao-bar${isDong ? ' dong' : ''}"></div>`
       : `<span class="yao-bars"><div class="yao-bar${isDong ? ' dong' : ''}"></div><div class="yao-bar${isDong ? ' dong' : ''}"></div></span>`;
 
-    // Red bar now, label text comes later with the name
     el.classList.remove('shuffling');
     el.classList.add(yang ? 'yao-yang' : 'yao-yin', 'revealed');
     el.style.transform = '';
@@ -501,7 +501,6 @@ function startShuffleAndReveal() {
       ${barHTML}
       <span class="yao-info"></span>
     `;
-    if (isDong) el.dataset.dongLabel = lineLabel(idx, yang);
 
     revealed++;
     setTimeout(revealNext, REVEAL_STAGGER);
@@ -519,7 +518,6 @@ function renderTaiji() {
       <div class="taiji-hint">长 按 太 极 抽 取 卦 象</div>
     </div>
   `;
-  // Wire long-press events
   const wrap = document.getElementById('taijiWrap');
   if (wrap) {
     wrap.addEventListener('mousedown', onPressStart);
@@ -531,13 +529,13 @@ function renderTaiji() {
   }
 }
 
-// ── Taiji long-press handlers ──
+// ── Taiji long-press ──
 let pressStartTime = 0;
-const MIN_PRESS = 250; // ms minimum hold
+const MIN_PRESS = 250;
 
 function onPressStart(e) {
   if (state !== 'taiji') return;
-  if (navigator.vibrate) navigator.vibrate(25); // press click
+  if (navigator.vibrate) { navigator.vibrate(1); navigator.vibrate(25); }
   e.preventDefault();
   pressStartTime = Date.now();
   const wrap = document.getElementById('taijiWrap');
@@ -552,21 +550,14 @@ function onPressEnd(e) {
   if (wrap) wrap.classList.remove('pressing');
   if (elapsed < MIN_PRESS) return;
 
-  // Generate hexagram
   hexVal = Math.floor(Math.random() * 64);
   lines = [];
   for (let i = 0; i < 6; i++) lines.push((hexVal >> i) & 1);
-
-  // Moving line from press duration: elapsed_ms % 6 → 0..5 (初..上)
   movingIdx = elapsed % 6;
-
-  // Compute transformed
   bianVal = hexVal ^ (1 << movingIdx);
 
-  // Haptic confirmation on successful trigger
-  if (navigator.vibrate) navigator.vibrate(30); // release tock
+  if (navigator.vibrate) navigator.vibrate(30);
 
-  // Fade taiji → hexagram with dongyao
   if (wrap) {
     wrap.classList.add('fade-out');
     setTimeout(() => renderHexagramWithDongYao(), 350);
@@ -579,7 +570,7 @@ function onPressCancel(e) {
   if (wrap) wrap.classList.remove('pressing');
 }
 
-// ── Render: Hexagram with dongyao baked in ──
+// ── Render: Hexagram ──
 function renderHexagramWithDongYao() {
   state = 'hexagram';
   const name = NAMES[hexVal];
@@ -596,7 +587,6 @@ function renderHexagramWithDongYao() {
     </div>
   `;
   setTimeout(() => startShuffleAndReveal(), 350);
-  // Reveal name + trigrams + dongyao badge + all line labels + line info together
   setTimeout(() => {
     const nm = document.getElementById('guaName');
     const tr = document.getElementById('guaTri');
@@ -604,33 +594,29 @@ function renderHexagramWithDongYao() {
     if (nm) nm.style.opacity = '1';
     if (tr) tr.style.opacity = '1';
     if (db) { db.style.opacity = '1'; db.style.animation = 'badge-pop .5s cubic-bezier(.34,1.56,.64,1) both'; }
-    // Fill all yao-line labels and na-jia info
     const allLines = document.querySelectorAll('#guaCard .yao-line');
     allLines.forEach(el => {
       const idx = parseInt(el.dataset.idx);
       if (isNaN(idx)) return;
       const yang = lines[idx];
       const isDong = (idx === movingIdx);
-      // Left label: 初九 / 六二 ...
       const labels = el.querySelectorAll('.yao-label');
       const labelTxt = lineLabel(idx, yang);
       if (labels[0]) { labels[0].textContent = labelTxt; if (isDong) labels[0].classList.add('dong'); }
-      // Right info: 甲子·妻财·世
       const info = el.querySelector('.yao-info');
       if (info) { info.textContent = lineInfoText(hexVal, idx); if (isDong) info.classList.add('dong'); }
     });
   }, 2500);
-  // Enable 展开变卦 button
   setTimeout(() => {
     const hint = document.getElementById('resultHint');
     if (hint) { hint.style.opacity = '1'; hint.style.pointerEvents = 'auto'; hint.style.transition = 'opacity .4s'; }
   }, 2750);
 }
 
-// ── Render static yao with na-jia info (already-revealed) ──
+// ── Render static yao (horizontal) ──
 function renderStaticYao(ls, hv, hlIdx, hlClass) {
   let html = '<div class="yao-stack">';
-  for (let i = 5; i >= 0; i--) {
+  for (let i = 0; i < 6; i++) {
     const yang = ls[i];
     const cls = yang ? 'yao-yang' : 'yao-yin';
     const hl = (i === hlIdx) ? ' ' + hlClass : '';
@@ -650,7 +636,7 @@ function renderStaticYao(ls, hv, hlIdx, hlClass) {
   return html;
 }
 
-// ── Render: Result (本卦↑ 变卦↓ slide) ──
+// ── Render: Result ──
 function onShowResult() {
   if (state !== 'hexagram') return;
   state = 'result';
@@ -659,13 +645,11 @@ function onShowResult() {
   const hint = document.getElementById('resultHint');
   if (hint) { hint.style.opacity = '0'; hint.style.pointerEvents = 'none'; }
 
-  // Add 本卦 label to the existing card
   const label = document.createElement('div');
   label.className = 'result-label';
   label.textContent = '本 卦';
   card.insertBefore(label, card.firstChild);
 
-  // Compute 变卦
   const bianLines = [...lines];
   bianLines[movingIdx] = bianLines[movingIdx] ? 0 : 1;
   const bianName = NAMES[bianVal];
@@ -673,7 +657,6 @@ function onShowResult() {
   const tri = trigramInfo(bianVal);
   const yaoHtml = renderStaticYao(bianLines, bianVal, movingIdx, 'changed');
 
-  // Create 变卦 card
   const div = document.createElement('div');
   div.className = 'gua-card bian-card';
   div.id = 'bianCard';
@@ -688,7 +671,6 @@ function onShowResult() {
   const appEl = document.getElementById('app');
   appEl.insertBefore(div, card.nextSibling);
 
-  // Reset button
   const resetDiv = document.createElement('div');
   resetDiv.className = 'action-hint';
   resetDiv.id = 'resetHint';
@@ -696,25 +678,20 @@ function onShowResult() {
   resetDiv.onclick = onReset;
   appEl.appendChild(resetDiv);
 
-  // Animate: 本卦微抬，变卦从上方滑落，无回弹
   const cardHeight = card.offsetHeight;
   const gap = 32;
 
   requestAnimationFrame(() => {
-    // 本卦：微微上移，平滑减速
     card.animate([
       { transform: 'translateY(0)' },
       { transform: 'translateY(-6px)' }
     ], { duration: 400, easing: 'cubic-bezier(0, 0, 0.2, 1)', fill: 'forwards' });
 
-    // 变卦：从本卦正上方滑入，全透明→不透明，清晰利落
-    // fill:'both' 保证 120ms 延迟期间不可见（取首帧 translateY + opacity:0）
     div.animate([
       { transform: `translateY(-${cardHeight + gap}px)`, opacity: 0 },
       { transform: 'translateY(0)', opacity: 1 }
     ], { duration: 450, easing: 'cubic-bezier(0, 0, 0.2, 1)', fill: 'both', delay: 120 });
 
-    // 重置按钮：淡入
     resetDiv.animate([
       { opacity: 0 },
       { opacity: 1 }
@@ -726,12 +703,10 @@ function onShowResult() {
 function onReset() {
   if (state !== 'result') return;
   const appEl = document.getElementById('app');
-  // Remove injected elements
   const bian = document.getElementById('bianCard');
   const rst = document.getElementById('resetHint');
   if (bian) bian.remove();
   if (rst) rst.remove();
-  // Remove the 本卦 label we injected into the card
   const label = document.querySelector('#guaCard .result-label');
   if (label) label.remove();
   renderTaiji();
