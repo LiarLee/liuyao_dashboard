@@ -320,6 +320,26 @@
     to { opacity: 0; transform: scale(.96); }
   }
 
+  /* ── Result: two cards side by side ── */
+  .result-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .result-row .gua-card {
+    flex: 0 1 auto;
+    min-width: 280px;
+    max-width: 340px;
+  }
+  .result-row .gua-card.result-card {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+
   /* ── Mobile ── */
   @media (max-width: 520px) {
     #app { padding: 1.5rem 1rem; gap: 1.5rem; }
@@ -333,6 +353,8 @@
     .yao-bars { width: 100px; }
     .yao-line { gap: 16px; }
     .gua-name { font-size: 1.4rem; }
+    .result-row { flex-direction: column; align-items: center; }
+    .result-row .gua-card { min-width: auto; max-width: 100%; }
   }
 </style>
 </head>
@@ -650,7 +672,7 @@ function renderStaticYao(ls, hv, hlIdx, hlClass) {
   return html;
 }
 
-// ── Render: Result (本卦↑ 变卦↓ slide) ──
+// ── Render: Result (本卦 | 变卦 横排) ──
 function onShowResult() {
   if (state !== 'hexagram') return;
   state = 'result';
@@ -659,7 +681,14 @@ function onShowResult() {
   const hint = document.getElementById('resultHint');
   if (hint) { hint.style.opacity = '0'; hint.style.pointerEvents = 'none'; }
 
-  // Add 本卦 label to the existing card
+  // Wrap both cards in a horizontal row
+  const row = document.createElement('div');
+  row.className = 'result-row';
+  row.id = 'resultRow';
+  card.parentNode.insertBefore(row, card);
+  row.appendChild(card);
+
+  // Add 本卦 label
   const label = document.createElement('div');
   label.className = 'result-label';
   label.textContent = '本 卦';
@@ -675,7 +704,7 @@ function onShowResult() {
 
   // Create 变卦 card
   const div = document.createElement('div');
-  div.className = 'gua-card bian-card';
+  div.className = 'gua-card result-card';
   div.id = 'bianCard';
   div.innerHTML = `
     <div class="result-label">变 卦</div>
@@ -684,9 +713,7 @@ function onShowResult() {
     ${yaoHtml}
     <div class="dong-badge" style="margin-top:0">变爻 · ${badge}</div>
   `;
-
-  const appEl = document.getElementById('app');
-  appEl.insertBefore(div, card.nextSibling);
+  row.appendChild(div);
 
   // Reset button
   const resetDiv = document.createElement('div');
@@ -694,31 +721,19 @@ function onShowResult() {
   resetDiv.id = 'resetHint';
   resetDiv.textContent = '点 击 重 新 抽 取';
   resetDiv.onclick = onReset;
-  appEl.appendChild(resetDiv);
+  document.getElementById('app').appendChild(resetDiv);
 
-  // Animate: 本卦微抬，变卦从上方滑落，无回弹
-  const cardHeight = card.offsetHeight;
-  const gap = 32;
-
+  // Animate: 变卦 slides in from the right
   requestAnimationFrame(() => {
-    // 本卦：微微上移，平滑减速
-    card.animate([
-      { transform: 'translateY(0)' },
-      { transform: 'translateY(-6px)' }
+    div.animate([
+      { transform: 'translateX(40px)', opacity: 0 },
+      { transform: 'translateX(0)', opacity: 1 }
     ], { duration: 400, easing: 'cubic-bezier(0, 0, 0.2, 1)', fill: 'forwards' });
 
-    // 变卦：从本卦正上方滑入，全透明→不透明，清晰利落
-    // fill:'both' 保证 120ms 延迟期间不可见（取首帧 translateY + opacity:0）
-    div.animate([
-      { transform: `translateY(-${cardHeight + gap}px)`, opacity: 0 },
-      { transform: 'translateY(0)', opacity: 1 }
-    ], { duration: 450, easing: 'cubic-bezier(0, 0, 0.2, 1)', fill: 'both', delay: 120 });
-
-    // 重置按钮：淡入
     resetDiv.animate([
       { opacity: 0 },
       { opacity: 1 }
-    ], { duration: 400, fill: 'both', delay: 700 });
+    ], { duration: 400, fill: 'both', delay: 300 });
   });
 }
 
@@ -726,14 +741,21 @@ function onShowResult() {
 function onReset() {
   if (state !== 'result') return;
   const appEl = document.getElementById('app');
-  // Remove injected elements
+  // Clean up injected elements
   const bian = document.getElementById('bianCard');
   const rst = document.getElementById('resetHint');
+  const row = document.getElementById('resultRow');
   if (bian) bian.remove();
   if (rst) rst.remove();
-  // Remove the 本卦 label we injected into the card
-  const label = document.querySelector('#guaCard .result-label');
-  if (label) label.remove();
+  // Move card back out of row, then remove row
+  const card = document.getElementById('guaCard');
+  if (row && card) {
+    // Remove 本卦 label
+    const label = card.querySelector('.result-label');
+    if (label) label.remove();
+    row.parentNode.insertBefore(card, row);
+    row.remove();
+  }
   renderTaiji();
 }
 
