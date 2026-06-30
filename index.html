@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>周易 · 占卦</title>
+<style>
+  :root {
+    --bg: #2a2a2a;
+    --card: #e6d7b8;
+    --card-shadow: #1a1a1a;
+    --yao: #1a1a1a;
+    --dong: #8b1a1a;
+    --text: #d4c5a9;
+    --text-dark: #2a2a2a;
+    --accent: #c9a96e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { width: 100%; height: 100%; }
+
+  body {
+    background: var(--bg);
+    min-height: 100dvh;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", "STSong", serif;
+    overflow-x: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 720px;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  /* ── Taiji ── */
+  .taiji-wrap {
+    cursor: pointer;
+    transition: transform .4s ease, opacity .6s ease;
+    position: relative;
+  }
+  .taiji-wrap.hidden { opacity: 0; pointer-events: none; transform: scale(.8); }
+
+  /* ── Long-press feedback ── */
+  .taiji-wrap.pressing {
+    transform: scale(1.08);
+  }
+  .taiji-wrap.pressing .taiji-css {
+    filter: drop-shadow(0 0 45px rgba(255,255,255,.35));
+  }
+  .taiji-wrap.pressing::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 234px; height: 234px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.3);
+    animation: press-ring 2.5s ease-out infinite;
+    pointer-events: none;
+  }
+  @keyframes press-ring {
+    0%   { transform: translate(-50%, -50%) scale(0.9); opacity: 0.5; }
+    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+  }
+
+  .taiji-css {
+    width: 234px;
+    height: 234px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: linear-gradient(to right, #fff 50%, #000 50%);
+    position: relative;
+    animation: taiji-spin 12s linear infinite;
+    filter: drop-shadow(0 0 30px rgba(255,255,255,.15));
+  }
+  .taiji-css::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 117px; height: 117px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #000 18px, #fff 18px);
+  }
+  .taiji-css::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 117px; height: 117px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #fff 18px, #000 18px);
+  }
+  @keyframes taiji-spin { to { transform: rotate(360deg); } }
+
+  .taiji-hint {
+    text-align: center;
+    color: var(--accent);
+    font-size: 1rem;
+    letter-spacing: .15em;
+    margin-top: 1.2rem;
+    animation: hint-pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes hint-pulse {
+    0%, 100% { opacity: .5; }
+    50% { opacity: 1; }
+  }
+
+  /* ── Hexagram card ── */
+  .gua-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 2rem 1.8rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    transition: opacity .5s ease, transform .5s ease;
+    position: relative;
+  }
+  .gua-card.hidden {
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    transform: translateY(20px);
+  }
+  .gua-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+    animation: card-in .5s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Yao lines */
+  .yao-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .yao-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    transition: all .6s cubic-bezier(.34,1.56,.64,1);
+  }
+  .yao-line.enter {
+    animation: yao-enter .55s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes yao-enter {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Yang: solid bar. Yin: two bars */
+  .yao-bar {
+    height: 14px;
+    border-radius: 7px;
+    transition: background .5s ease, box-shadow .5s ease, width .5s ease;
+  }
+  .yao-yang .yao-bar {
+    width: 120px;
+    background: var(--yao);
+  }
+  .yao-yin .yao-bar {
+    width: 52px;
+    background: var(--yao);
+  }
+  .yao-bar.dong {
+    background: var(--dong) !important;
+    box-shadow: 0 0 18px rgba(139,26,26,.55), 0 0 40px rgba(139,26,26,.25);
+    animation: dong-glow 1.6s ease-in-out infinite;
+  }
+  .yao-bar.changed {
+    box-shadow: 0 0 10px rgba(201,169,110,.45), 0 0 18px rgba(201,169,110,.2);
+  }
+  .yao-bars {
+    display: flex;
+    width: 120px;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  @keyframes dong-glow {
+    0%, 100% { box-shadow: 0 0 14px rgba(139,26,26,.45), 0 0 32px rgba(139,26,26,.18); }
+    50%      { box-shadow: 0 0 26px rgba(139,26,26,.7), 0 0 56px rgba(139,26,26,.35); }
+  }
+
+  /* ── Shuffle / unrevealed state ── */
+  .yao-bar.unrevealed {
+    width: 120px;
+    background: linear-gradient(90deg,
+      #b8a070 0%, #d4be8c 20%, #efe0b8 50%, #d4be8c 80%, #b8a070 100%);
+    background-size: 200% 100%;
+    animation: shimmer 0.7s linear infinite;
+  }
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .yao-line.shuffling .yao-bar {
+    animation: shimmer 0.7s linear infinite, shuffle-wobble 0.12s ease-in-out infinite;
+  }
+  @keyframes shuffle-wobble {
+    0%, 100% { transform: translateX(0); }
+    25%  { transform: translateX(-4px); }
+    75%  { transform: translateX(4px); }
+  }
+
+  .yao-line.revealed {
+    animation: yao-reveal 0.45s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @keyframes yao-reveal {
+    0%   { opacity: 0; transform: scale(.85); filter: blur(4px); }
+    100% { opacity: 1; transform: scale(1); filter: blur(0); }
+  }
+
+  /* Line label */
+  .yao-label {
+    font-size: .78rem;
+    color: var(--text-dark);
+    opacity: .45;
+    min-width: 2.2rem;
+    text-align: center;
+    transition: all .5s ease;
+  }
+  .yao-label.dong {
+    opacity: 1;
+    color: var(--dong);
+    font-weight: bold;
+  }
+
+  /* ── Na-jia info on right side of each line ── */
+  .yao-info {
+    font-size: .72rem;
+    color: #7a6e5a;
+    opacity: .55;
+    min-width: 7rem;
+    text-align: left;
+    letter-spacing: .05em;
+    transition: all .5s ease;
+  }
+  .yao-info.dong {
+    opacity: 1;
+    color: var(--dong);
+  }
+  .yao-info.changed {
+    opacity: .85;
+    color: #8b7a5a;
+  }
+
+  /* ── Gua name ── */
+  .gua-name {
+    font-size: 1.8rem;
+    letter-spacing: .3em;
+    color: var(--text-dark);
+    font-weight: bold;
+  }
+  .gua-trigrams {
+    font-size: 1rem;
+    color: #7a6e5a;
+    letter-spacing: .1em;
+  }
+
+  /* ── Hint / button ── */
+  .action-hint {
+    color: var(--accent);
+    font-size: .95rem;
+    letter-spacing: .1em;
+    cursor: pointer;
+    transition: opacity .3s;
+    text-align: center;
+  }
+  .action-hint:hover { opacity: .7; }
+
+  .result-label {
+    font-size: .85rem;
+    color: #7a6e5a;
+    letter-spacing: .15em;
+  }
+
+  /* ── Dong-yao badge ── */
+  .dong-badge {
+    display: inline-block;
+    background: var(--dong);
+    color: #f0d9b0;
+    font-size: .78rem;
+    padding: 2px 10px;
+    border-radius: 10px;
+    letter-spacing: .1em;
+    opacity: 0;
+    transform: scale(0);
+  }
+  @keyframes badge-pop {
+    from { transform: scale(0); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  /* ── Transition overlay ── */
+  .fade-out {
+    animation: fadeOut .35s ease forwards;
+  }
+  @keyframes fadeOut {
+    to { opacity: 0; transform: scale(.96); }
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 520px) {
+    #app { padding: 1.5rem 1rem; gap: 1.5rem; }
+    .taiji-css { width: 182px; height: 182px; }
+    .taiji-css::before { width: 91px; height: 91px; background: radial-gradient(circle at center, #000 14px, #fff 14px); }
+    .taiji-css::after  { width: 91px; height: 91px; background: radial-gradient(circle at center, #fff 14px, #000 14px); }
+    .taiji-wrap.pressing::after { width: 182px; height: 182px; }
+    .gua-card { padding: 1.5rem 1.2rem; gap: 1rem; }
+    .yao-yang .yao-bar { width: 100px; }
+    .yao-yin .yao-bar  { width: 42px; }
+    .yao-bars { width: 100px; }
+    .yao-line { gap: 16px; }
+    .gua-name { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ── Data ──
+const NAMES = [
+  "坤","谦","师","升","复","明夷","临","泰",
+  "剥","艮","蒙","蛊","颐","贲","损","大畜",
+  "比","蹇","坎","井","屯","既济","节","需",
+  "观","渐","涣","巽","益","家人","中孚","小畜",
+  "豫","小过","解","恒","震","丰","归妹","大壮",
+  "晋","旅","未济","鼎","噬嗑","离","睽","大有",
+  "萃","咸","困","大过","随","革","兑","夬",
+  "否","遁","讼","姤","无妄","同人","履","乾"
+];
+const TRIGRAM = ['☷','☶','☵','☴','☳','☲','☱','☰'];
+const TRIGRAM_NAME = ['坤','艮','坎','巽','震','离','兑','乾'];
+const POS = ['初','二','三','四','五','上'];
+
+// ── 纳甲 (Na Jia) ── trigram idx 0-7 → [inner 3 lines, outer 3 lines]
+const NAJIA = [
+  { inner: ['乙未','乙巳','乙卯'], outer: ['癸丑','癸亥','癸酉'] }, // 0 坤
+  { inner: ['丙辰','丙午','丙申'], outer: ['丙戌','丙子','丙寅'] }, // 1 艮
+  { inner: ['戊寅','戊辰','戊午'], outer: ['戊申','戊戌','戊子'] }, // 2 坎
+  { inner: ['辛丑','辛亥','辛酉'], outer: ['辛未','辛巳','辛卯'] }, // 3 巽
+  { inner: ['庚子','庚寅','庚辰'], outer: ['庚午','庚申','庚戌'] }, // 4 震
+  { inner: ['己卯','己丑','己亥'], outer: ['己酉','己未','己巳'] }, // 5 离
+  { inner: ['丁巳','丁卯','丁丑'], outer: ['丁亥','丁酉','丁未'] }, // 6 兑
+  { inner: ['甲子','甲寅','甲辰'], outer: ['壬午','壬申','壬戌'] }, // 7 乾
+];
+
+// ── 五行 ──
+const ZHI_WX = { '子':'水','丑':'土','寅':'木','卯':'木','辰':'土','巳':'火', '午':'火','未':'土','申':'金','酉':'金','戌':'土','亥':'水' };
+const GUA_WX = ['土','土','水','木','木','火','金','金']; // 坤艮坎巽震离兑乾
+const WX_S = { '木':'火','火':'土','土':'金','金':'水','水':'木' }; // 相生
+const WX_K = { '木':'土','土':'水','水':'火','火':'金','金':'木' }; // 相克
+
+// ── 八宫世应：hexValue → {palace, shi} ──
+const PALACE_SHI = {};
+(function buildPalace() {
+  for (let p = 0; p < 8; p++) {
+    const pure = p * 9;
+    const m = [pure];
+    for (let s = 0; s < 5; s++) { let v = pure; for (let i = 0; i <= s; i++) v ^= (1 << i); m.push(v); }
+    m.push(m[5] ^ 8);  // 游魂
+    m.push(m[5] ^ 15); // 归魂
+    const sPos = [5,0,1,2,3,4,3,2];
+    for (let i = 0; i < 8; i++) PALACE_SHI[m[i]] = { palace: p, shi: sPos[i] };
+  }
+})();
+
+function getNaJiaLines(hv) {
+  const lo = hv & 7, hi = hv >> 3;
+  return [...NAJIA[lo].inner, ...NAJIA[hi].outer]; // 初→上
+}
+function getLiuQin(hv) {
+  const pe = GUA_WX[PALACE_SHI[hv].palace];
+  return getNaJiaLines(hv).map(gz => {
+    const be = ZHI_WX[gz[1]];
+    if (be === pe) return '兄弟';
+    if (WX_S[pe] === be) return '子孙';
+    if (WX_K[pe] === be) return '妻财';
+    if (WX_S[be] === pe) return '父母';
+    return '官鬼';
+  });
+}
+function lineInfoText(hv, idx) {
+  const ps = PALACE_SHI[hv];
+  const gz = getNaJiaLines(hv)[idx];
+  const lq = getLiuQin(hv)[idx];
+  let tag = '';
+  if (idx === ps.shi) tag = '·世';
+  else if (idx === ((ps.shi + 3) % 6)) tag = '·应';
+  return gz + '·' + lq + tag;
+}
+
+// ── State ──
+let state = 'taiji'; // taiji | hexagram | result
+let hexVal = 0;      // 0-63
+let lines = [];       // [l1..l6] bottom→top, 0=yin 1=yang
+let movingIdx = -1;   // 0-5 (0=初爻)
+let bianVal = 0;
+
+const app = document.getElementById('app');
+
+// ── Helpers ──
+function lineLabel(idx, isYang) {
+  return POS[idx] + (isYang ? '九' : '六');
+}
+
+function trigramInfo(val) {
+  const up = val >> 3, lo = val & 7;
+  return TRIGRAM[lo] + TRIGRAM[up] + ' ' + TRIGRAM_NAME[lo] + '下' + TRIGRAM_NAME[up] + '上';
+}
+
+// ── Render shuffling yao (for initial draw) ──
+function renderShufflingYao() {
+  let html = '<div class="yao-stack">';
+  for (let i = 5; i >= 0; i--) {
+    html += `<div class="yao-line shuffling" data-idx="${i}">
+      <span class="yao-label"></span>
+      <div class="yao-bar unrevealed"></div>
+      <span class="yao-info"></span>
+    </div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+// ── Shuffle → Reveal animation ──
+function startShuffleAndReveal() {
+  const lineEls = document.querySelectorAll('.yao-line.shuffling');
+  if (!lineEls.length) return;
+
+  const SHUFFLE_DURATION = 900; // ms of rapid shuffle
+  const REVEAL_STAGGER = 110;   // ms between each line reveal
+  const startTime = performance.now();
+
+  // Build reveal order: bottom (idx 0) first, top (idx 5) last
+  const ordered = [];
+  lineEls.forEach(el => ordered.push(el));
+  // lineEls are in DOM order: top→bottom (idx 5→0). We want bottom→top.
+  ordered.reverse(); // now bottom first
+
+  let shuffleTimer = null;
+  let revealed = 0;
+
+  function doShuffle() {
+    if (revealed >= 6) return;
+    // Random wobble on still-shuffling lines
+    ordered.forEach(el => {
+      if (el.classList.contains('shuffling') && Math.random() < 0.35) {
+        el.style.transform = `translateX(${(Math.random()-0.5)*10}px)`;
+      }
+    });
+    // Schedule next shuffle tick
+    const elapsed = performance.now() - startTime;
+    if (elapsed < SHUFFLE_DURATION) {
+      shuffleTimer = requestAnimationFrame(doShuffle);
+    } else {
+      // Start revealing
+      revealNext();
+    }
+  }
+
+  function revealNext() {
+    if (revealed >= 6) return;
+    const el = ordered[revealed];
+    const idx = parseInt(el.dataset.idx);
+    const yang = lines[idx];
+    const isDong = (idx === movingIdx);
+
+    const barHTML = yang
+      ? `<div class="yao-bar${isDong ? ' dong' : ''}"></div>`
+      : `<span class="yao-bars"><div class="yao-bar${isDong ? ' dong' : ''}"></div><div class="yao-bar${isDong ? ' dong' : ''}"></div></span>`;
+
+    // Red bar now, label text comes later with the name
+    el.classList.remove('shuffling');
+    el.classList.add(yang ? 'yao-yang' : 'yao-yin', 'revealed');
+    el.style.transform = '';
+    el.innerHTML = `
+      <span class="yao-label"></span>
+      ${barHTML}
+      <span class="yao-info"></span>
+    `;
+    if (isDong) el.dataset.dongLabel = lineLabel(idx, yang);
+
+    revealed++;
+    setTimeout(revealNext, REVEAL_STAGGER);
+  }
+
+  shuffleTimer = requestAnimationFrame(doShuffle);
+}
+
+// ── Render: Taiji ──
+function renderTaiji() {
+  state = 'taiji';
+  app.innerHTML = `
+    <div class="taiji-wrap" id="taijiWrap">
+      <div class="taiji-css"></div>
+      <div class="taiji-hint">长 按 太 极 抽 取 卦 象</div>
+    </div>
+  `;
+  // Wire long-press events
+  const wrap = document.getElementById('taijiWrap');
+  if (wrap) {
+    wrap.addEventListener('mousedown', onPressStart);
+    wrap.addEventListener('mouseup', onPressEnd);
+    wrap.addEventListener('mouseleave', onPressCancel);
+    wrap.addEventListener('touchstart', onPressStart, {passive: false});
+    wrap.addEventListener('touchend', onPressEnd);
+    wrap.addEventListener('touchcancel', onPressCancel);
+  }
+}
+
+// ── Taiji long-press handlers ──
+let pressStartTime = 0;
+const MIN_PRESS = 250; // ms minimum hold
+
+function onPressStart(e) {
+  if (state !== 'taiji') return;
+  if (navigator.vibrate) navigator.vibrate(25); // press click
+  e.preventDefault();
+  pressStartTime = Date.now();
+  const wrap = document.getElementById('taijiWrap');
+  if (wrap) wrap.classList.add('pressing');
+}
+
+function onPressEnd(e) {
+  if (state !== 'taiji') return;
+  e.preventDefault();
+  const elapsed = Date.now() - pressStartTime;
+  const wrap = document.getElementById('taijiWrap');
+  if (wrap) wrap.classList.remove('pressing');
+  if (elapsed < MIN_PRESS) return;
+
+  // Generate hexagram
+  hexVal = Math.floor(Math.random() * 64);
+  lines = [];
+  for (let i = 0; i < 6; i++) lines.push((hexVal >> i) & 1);
+
+  // Moving line from press duration: elapsed_ms % 6 → 0..5 (初..上)
+  movingIdx = elapsed % 6;
+
+  // Compute transformed
+  bianVal = hexVal ^ (1 << movingIdx);
+
+  // Haptic confirmation on successful trigger
+  if (navigator.vibrate) navigator.vibrate(30); // release tock
+
+  // Fade taiji → hexagram with dongyao
+  if (wrap) {
+    wrap.classList.add('fade-out');
+    setTimeout(() => renderHexagramWithDongYao(), 350);
+  }
+}
+
+function onPressCancel(e) {
+  if (state !== 'taiji') return;
+  const wrap = document.getElementById('taijiWrap');
+  if (wrap) wrap.classList.remove('pressing');
+}
+
+// ── Render: Hexagram with dongyao baked in ──
+function renderHexagramWithDongYao() {
+  state = 'hexagram';
+  const name = NAMES[hexVal];
+  const tri = trigramInfo(hexVal);
+  const badge = lineLabel(movingIdx, lines[movingIdx]);
+  const yaoHtml = renderShufflingYao();
+  app.innerHTML = `
+    <div class="gua-card visible" id="guaCard">
+      <div class="gua-name" id="guaName" style="opacity:0; transition:opacity .5s">${name}</div>
+      <div class="gua-trigrams" id="guaTri" style="opacity:0; transition:opacity .5s">${tri}</div>
+      ${yaoHtml}
+      <div class="dong-badge" id="dongBadge" style="opacity:0; transition:opacity .5s">动爻 · ${badge}</div>
+      <div class="action-hint" id="resultHint" onclick="onShowResult()" style="opacity:0; pointer-events:none">点 击 展 开 变 卦</div>
+    </div>
+  `;
+  setTimeout(() => startShuffleAndReveal(), 350);
+  // Reveal name + trigrams + dongyao badge + all line labels + line info together
+  setTimeout(() => {
+    const nm = document.getElementById('guaName');
+    const tr = document.getElementById('guaTri');
+    const db = document.getElementById('dongBadge');
+    if (nm) nm.style.opacity = '1';
+    if (tr) tr.style.opacity = '1';
+    if (db) { db.style.opacity = '1'; db.style.animation = 'badge-pop .5s cubic-bezier(.34,1.56,.64,1) both'; }
+    // Fill all yao-line labels and na-jia info
+    const allLines = document.querySelectorAll('#guaCard .yao-line');
+    allLines.forEach(el => {
+      const idx = parseInt(el.dataset.idx);
+      if (isNaN(idx)) return;
+      const yang = lines[idx];
+      const isDong = (idx === movingIdx);
+      // Left label: 初九 / 六二 ...
+      const labels = el.querySelectorAll('.yao-label');
+      const labelTxt = lineLabel(idx, yang);
+      if (labels[0]) { labels[0].textContent = labelTxt; if (isDong) labels[0].classList.add('dong'); }
+      // Right info: 甲子·妻财·世
+      const info = el.querySelector('.yao-info');
+      if (info) { info.textContent = lineInfoText(hexVal, idx); if (isDong) info.classList.add('dong'); }
+    });
+  }, 2500);
+  // Enable 展开变卦 button
+  setTimeout(() => {
+    const hint = document.getElementById('resultHint');
+    if (hint) { hint.style.opacity = '1'; hint.style.pointerEvents = 'auto'; hint.style.transition = 'opacity .4s'; }
+  }, 2750);
+}
+
+// ── Render static yao with na-jia info (already-revealed) ──
+function renderStaticYao(ls, hv, hlIdx, hlClass) {
+  let html = '<div class="yao-stack">';
+  for (let i = 5; i >= 0; i--) {
+    const yang = ls[i];
+    const cls = yang ? 'yao-yang' : 'yao-yin';
+    const hl = (i === hlIdx) ? ' ' + hlClass : '';
+    const info = lineInfoText(hv, i);
+    const label = lineLabel(i, yang);
+    const labelDong = (i === hlIdx) ? ' dong' : '';
+    html += `<div class="yao-line ${cls}">`;
+    html += `<span class="yao-label${labelDong}">${label}</span>`;
+    if (yang) {
+      html += `<div class="yao-bar${hl}"></div>`;
+    } else {
+      html += `<span class="yao-bars"><div class="yao-bar${hl}"></div><div class="yao-bar${hl}"></div></span>`;
+    }
+    html += `<span class="yao-info${labelDong}">${info}</span></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+// ── Render: Result (本卦↑ 变卦↓ slide) ──
+function onShowResult() {
+  if (state !== 'hexagram') return;
+  state = 'result';
+
+  const card = document.getElementById('guaCard');
+  const hint = document.getElementById('resultHint');
+  if (hint) { hint.style.opacity = '0'; hint.style.pointerEvents = 'none'; }
+
+  // Add 本卦 label to the existing card
+  const label = document.createElement('div');
+  label.className = 'result-label';
+  label.textContent = '本 卦';
+  card.insertBefore(label, card.firstChild);
+
+  // Compute 变卦
+  const bianLines = [...lines];
+  bianLines[movingIdx] = bianLines[movingIdx] ? 0 : 1;
+  const bianName = NAMES[bianVal];
+  const badge = lineLabel(movingIdx, lines[movingIdx]);
+  const tri = trigramInfo(bianVal);
+  const yaoHtml = renderStaticYao(bianLines, bianVal, movingIdx, 'changed');
+
+  // Create 变卦 card
+  const div = document.createElement('div');
+  div.className = 'gua-card bian-card';
+  div.id = 'bianCard';
+  div.innerHTML = `
+    <div class="result-label">变 卦</div>
+    <div class="gua-name">${bianName}</div>
+    <div class="gua-trigrams">${tri}</div>
+    ${yaoHtml}
+    <div class="dong-badge" style="margin-top:0">变爻 · ${badge}</div>
+  `;
+
+  const appEl = document.getElementById('app');
+  appEl.insertBefore(div, card.nextSibling);
+
+  // Reset button
+  const resetDiv = document.createElement('div');
+  resetDiv.className = 'action-hint';
+  resetDiv.id = 'resetHint';
+  resetDiv.textContent = '点 击 重 新 抽 取';
+  resetDiv.onclick = onReset;
+  appEl.appendChild(resetDiv);
+
+  // Animate: 本卦微抬，变卦从上方滑落，无回弹
+  const cardHeight = card.offsetHeight;
+  const gap = 32;
+
+  requestAnimationFrame(() => {
+    // 本卦：微微上移，平滑减速
+    card.animate([
+      { transform: 'translateY(0)' },
+      { transform: 'translateY(-6px)' }
+    ], { duration: 400, easing: 'cubic-bezier(0, 0, 0.2, 1)', fill: 'forwards' });
+
+    // 变卦：从本卦正上方滑入，全透明→不透明，清晰利落
+    // fill:'both' 保证 120ms 延迟期间不可见（取首帧 translateY + opacity:0）
+    div.animate([
+      { transform: `translateY(-${cardHeight + gap}px)`, opacity: 0 },
+      { transform: 'translateY(0)', opacity: 1 }
+    ], { duration: 450, easing: 'cubic-bezier(0, 0, 0.2, 1)', fill: 'both', delay: 120 });
+
+    // 重置按钮：淡入
+    resetDiv.animate([
+      { opacity: 0 },
+      { opacity: 1 }
+    ], { duration: 400, fill: 'both', delay: 700 });
+  });
+}
+
+// ── Reset ──
+function onReset() {
+  if (state !== 'result') return;
+  const appEl = document.getElementById('app');
+  // Remove injected elements
+  const bian = document.getElementById('bianCard');
+  const rst = document.getElementById('resetHint');
+  if (bian) bian.remove();
+  if (rst) rst.remove();
+  // Remove the 本卦 label we injected into the card
+  const label = document.querySelector('#guaCard .result-label');
+  if (label) label.remove();
+  renderTaiji();
+}
+
+// ── Init ──
+renderTaiji();
+</script>
+</body>
+</html>
